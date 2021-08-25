@@ -236,6 +236,7 @@ class ReactExoplayerView extends FrameLayout implements
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
+        Log.d(TAG, "onAttachedToWindow -> initializePlayer, instance=" + hashCode());
         initializePlayer();
     }
 
@@ -428,7 +429,11 @@ class ReactExoplayerView extends FrameLayout implements
 
                     PlaybackParameters params = new PlaybackParameters(rate, 1f);
                     player.setPlaybackParameters(params);
+                    Log.d(TAG, "initializePlayer, creating new SimpleExoPlayer, instance=" + hashCode());
+                } else {
+                    Log.d(TAG, "initializePlayer, *NOT* creating new SimpleExoPlayer, instance=" + hashCode());
                 }
+
                 if (playerNeedsSource && srcUri != null) {
                     exoPlayerView.invalidateAspectRatio();
 
@@ -471,6 +476,9 @@ class ReactExoplayerView extends FrameLayout implements
                     reLayout(exoPlayerView);
                     eventEmitter.loadStart();
                     loadVideoStarted = true;
+                    Log.d(TAG, "initializePlayer, loading sourch, instance=" + hashCode());
+                } else {
+                    Log.d(TAG, "initializePlayer, *NOT* loading source, instance=" + hashCode());
                 }
 
                 // Initializing the playerControlView
@@ -481,8 +489,7 @@ class ReactExoplayerView extends FrameLayout implements
         }, 1);
     }
 
-    private DrmSessionManager buildDrmSessionManager(UUID uuid,
-                                                                           String licenseUrl, String[] keyRequestPropertiesArray) throws UnsupportedDrmException {
+    private DrmSessionManager buildDrmSessionManager(UUID uuid, String licenseUrl, String[] keyRequestPropertiesArray) throws UnsupportedDrmException {
         if (Util.SDK_INT < 18) {
             return null;
         }
@@ -619,6 +626,7 @@ class ReactExoplayerView extends FrameLayout implements
             switch (player.getPlaybackState()) {
                 case Player.STATE_IDLE:
                 case Player.STATE_ENDED:
+                    Log.d(TAG, "startPlayback -> initializePlayer, player already instantiated, instance=" + hashCode());
                     initializePlayer();
                     break;
                 case Player.STATE_BUFFERING:
@@ -632,8 +640,10 @@ class ReactExoplayerView extends FrameLayout implements
             }
 
         } else {
+            Log.d(TAG, "startPlayback -> initializePlayer, player not already instantiated, instance=" + hashCode());
             initializePlayer();
         }
+
         if (!disableFocus) {
             setKeepScreenOn(preventsDisplaySleepDuringVideoPlayback);
         }
@@ -815,6 +825,8 @@ class ReactExoplayerView extends FrameLayout implements
     }
 
     private void videoLoaded() {
+        Log.d(TAG, "videoLoaded, instance=" + hashCode());
+
         if (loadVideoStarted) {
             loadVideoStarted = false;
             setSelectedAudioTrack(audioTrackType, audioTrackValue);
@@ -852,6 +864,7 @@ class ReactExoplayerView extends FrameLayout implements
         }
         return audioTracks;
     }
+
     private WritableArray getVideoTrackInfo() {
         WritableArray videoTracks = Arguments.createArray();
 
@@ -995,6 +1008,7 @@ class ReactExoplayerView extends FrameLayout implements
         playerNeedsSource = true;
         if (isBehindLiveWindow(e)) {
             clearResumePosition();
+            Log.d(TAG, "onPlayerError -> initializePlayer, instance=" + hashCode());
             initializePlayer();
         } else {
             updateResumePosition();
@@ -1093,6 +1107,7 @@ class ReactExoplayerView extends FrameLayout implements
 
     private void reloadSource() {
         playerNeedsSource = true;
+        Log.d(TAG, "onPlayerError -> initializePlayer, instance=" + hashCode());
         initializePlayer();
     }
 
@@ -1306,6 +1321,7 @@ class ReactExoplayerView extends FrameLayout implements
     public void setMinLoadRetryCountModifier(int newMinLoadRetryCount) {
         minLoadRetryCount = newMinLoadRetryCount;
         releasePlayer();
+        Log.d(TAG, "onPlayerError -> initializePlayer, instance=" + hashCode());
         initializePlayer();
     }
 
@@ -1365,6 +1381,7 @@ class ReactExoplayerView extends FrameLayout implements
         bufferForPlaybackMs = newBufferForPlaybackMs;
         bufferForPlaybackAfterRebufferMs = newBufferForPlaybackAfterRebufferMs;
         releasePlayer();
+        Log.d(TAG, "setBufferConfig -> initializePlayer, instance=" + hashCode());
         initializePlayer();
     }
 
