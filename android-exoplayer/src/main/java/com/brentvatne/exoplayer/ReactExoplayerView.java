@@ -1083,6 +1083,7 @@ class ReactExoplayerView extends FrameLayout implements
                             this.requestHeaders);
 
             if (!isSourceEqual) {
+                Log.d(TAG, 'setSrc -> reloadSource, source changed, instance=' + hashCode());
                 reloadSource();
             }
         }
