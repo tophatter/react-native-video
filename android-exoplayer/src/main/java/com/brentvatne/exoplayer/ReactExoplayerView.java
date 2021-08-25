@@ -29,8 +29,8 @@ import com.facebook.react.uimanager.ThemedReactContext;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.DefaultRenderersFactory;
+import com.google.android.exoplayer2.PlaybackException;
 import com.google.android.exoplayer2.ExoPlaybackException;
-import com.google.android.exoplayer2.ExoPlayerFactory;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.Player;
@@ -569,7 +569,13 @@ class ReactExoplayerView extends FrameLayout implements
     }
 
     private MediaSource buildTextSource(String title, Uri uri, String mimeType, String language) {
-        Format textFormat = Format.createTextSampleFormat(title, mimeType, Format.NO_VALUE, language);
+        Format textFormat = new Format.Builder()
+                .setId(title)
+                .setLanguage(language)
+                .setSelectionFlags(Format.NO_VALUE)
+                .setSampleMimeType(mimeType)
+                .build();
+
         return new SingleSampleMediaSource.Factory(mediaDataSourceFactory)
                 .createMediaSource(uri, textFormat, C.TIME_UNSET);
     }
@@ -943,14 +949,14 @@ class ReactExoplayerView extends FrameLayout implements
         }
         // When repeat is turned on, reaching the end of the video will not cause a state change
         // so we need to explicitly detect it.
-        if (reason == Player.DISCONTINUITY_REASON_PERIOD_TRANSITION
+        if (reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION
                 && player.getRepeatMode() == Player.REPEAT_MODE_ONE) {
             eventEmitter.end();
         }
     }
 
     @Override
-    public void onTimelineChanged(Timeline timeline, Object manifest, int reason) {
+    public void onTimelineChanged(Timeline timeline, int reason) {
         // Do nothing.
     }
 
@@ -981,8 +987,16 @@ class ReactExoplayerView extends FrameLayout implements
     }
 
     @Override
-    public void onPlayerError(ExoPlaybackException e) {
-        String errorString = "ExoPlaybackException type : " + e.type;
+    public void onPlayerError(PlaybackException pe) {
+        if (!(pe instanceof ExoPlaybackException)) {
+            eventEmitter.error("PlaybackException type : " + e.getErrorCodeName(), pe);
+            playerNeedsSource = true;
+            updateResumePosition();
+            return;
+        }
+
+        ExoPlaybackException e = (ExoPlaybackException) pe;
+        errorString = "ExoPlaybackException type : " + e.type;
         Exception ex = e;
         if (e.type == ExoPlaybackException.TYPE_RENDERER) {
             Exception cause = e.getRendererException();
