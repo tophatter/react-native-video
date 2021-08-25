@@ -1063,15 +1063,15 @@ class ReactExoplayerView extends FrameLayout implements
     // ReactExoplayerViewManager public api
 
     public void setSrc(final Uri uri, final String extension, Map<String, String> headers) {
+        Log.d(TAG, "setSrc -> " + uri + ", instance=" + hashCode());
+
         if (uri != null) {
             boolean isSourceEqual = uri.equals(srcUri);
 
             this.srcUri = uri;
             this.extension = extension;
             this.requestHeaders = headers;
-            this.mediaDataSourceFactory =
-                    DataSourceUtil.getDefaultDataSourceFactory(this.themedReactContext, bandwidthMeter,
-                            this.requestHeaders);
+            this.mediaDataSourceFactory = DataSourceUtil.getDefaultDataSourceFactory(this.themedReactContext, bandwidthMeter, this.requestHeaders);
 
             if (!isSourceEqual) {
                 Log.d(TAG, "setSrc -> reloadSource, source changed, instance=" + hashCode());
@@ -1281,6 +1281,8 @@ class ReactExoplayerView extends FrameLayout implements
     }
 
     public void setPausedModifier(boolean paused) {
+        Log.d(TAG, "setPausedModifier -> " + paused + ", instance=" + hashCode());
+
         isPaused = paused;
         if (player != null) {
             if (!paused) {
@@ -1292,6 +1294,8 @@ class ReactExoplayerView extends FrameLayout implements
     }
 
     public void setMutedModifier(boolean muted) {
+        Log.d(TAG, "setMutedModifier -> " + muted + ", instance=" + hashCode());
+
         this.muted = muted;
         audioVolume = muted ? 0.f : 1.f;
         if (player != null) {
@@ -1299,8 +1303,9 @@ class ReactExoplayerView extends FrameLayout implements
         }
     }
 
-
     public void setVolumeModifier(float volume) {
+        Log.d(TAG, "setVolumeModifier -> " + volume + ", instance=" + hashCode());
+
         audioVolume = volume;
         if (player != null) {
             player.setVolume(audioVolume);
@@ -1327,7 +1332,7 @@ class ReactExoplayerView extends FrameLayout implements
         maxBitRate = newMaxBitRate;
         if (player != null) {
             trackSelector.setParameters(trackSelector.buildUponParameters()
-                    .setMaxVideoBitrate(maxBitRate == 0 ? Integer.MAX_VALUE : maxBitRate));
+                .setMaxVideoBitrate(maxBitRate == 0 ? Integer.MAX_VALUE : maxBitRate));
         }
     }
 
@@ -1343,6 +1348,7 @@ class ReactExoplayerView extends FrameLayout implements
     }
 
     public void setDisableFocus(boolean disableFocus) {
+        Log.d(TAG, "setDisableFocus -> " + disableFocus + ", instance=" + hashCode());
         this.disableFocus = disableFocus;
     }
 
@@ -1409,7 +1415,6 @@ class ReactExoplayerView extends FrameLayout implements
     public void setDrmLicenseHeader(String[] header){
         this.drmLicenseHeader = header;
     }
-
 
     @Override
     public void onDrmKeysLoaded(int windowIndex, MediaSource.MediaPeriodId mediaPeriodId) {
