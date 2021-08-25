@@ -989,14 +989,14 @@ class ReactExoplayerView extends FrameLayout implements
     @Override
     public void onPlayerError(PlaybackException pe) {
         if (!(pe instanceof ExoPlaybackException)) {
-            eventEmitter.error("PlaybackException type : " + e.getErrorCodeName(), pe);
+            eventEmitter.error("PlaybackException type : " + pe.getErrorCodeName(), pe);
             playerNeedsSource = true;
             updateResumePosition();
             return;
         }
 
         ExoPlaybackException e = (ExoPlaybackException) pe;
-        errorString = "ExoPlaybackException type : " + e.type;
+        String errorString = "ExoPlaybackException type : " + e.type;
         Exception ex = e;
         if (e.type == ExoPlaybackException.TYPE_RENDERER) {
             Exception cause = e.getRendererException();
