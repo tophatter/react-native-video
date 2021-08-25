@@ -113,7 +113,6 @@ class ReactExoplayerView extends FrameLayout implements
     private SimpleExoPlayer player;
     private DefaultTrackSelector trackSelector;
     private boolean playerNeedsSource;
-    private boolean initializing;
 
     private int resumeWindow;
     private long resumePosition;
@@ -390,92 +389,93 @@ class ReactExoplayerView extends FrameLayout implements
     }
 
     private void initializePlayer() {
-        boolean initializationRequired =
-          player == null || (playerNeedsSource && srcUri != null);
+        ReactExoplayerView self = this;
+        // This ensures all props have been settled, to avoid async racing conditions.
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (player == null) {
+                    ExoTrackSelection.Factory videoTrackSelectionFactory = new AdaptiveTrackSelection.Factory();
+                    trackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
+                    trackSelector.setParameters(trackSelector.buildUponParameters()
+                            .setMaxVideoBitrate(maxBitRate == 0 ? Integer.MAX_VALUE : maxBitRate));
 
-        if (!initializationRequired) {
-            return;
-        }
+                    DefaultAllocator allocator = new DefaultAllocator(true, C.DEFAULT_BUFFER_SEGMENT_SIZE);
+                    DefaultLoadControl.Builder defaultLoadControlBuilder = new DefaultLoadControl.Builder();
+                    defaultLoadControlBuilder.setAllocator(allocator);
+                    defaultLoadControlBuilder.setBufferDurationsMs(minBufferMs, maxBufferMs, bufferForPlaybackMs, bufferForPlaybackAfterRebufferMs);
+                    defaultLoadControlBuilder.setTargetBufferBytes(-1);
+                    defaultLoadControlBuilder.setPrioritizeTimeOverSizeThresholds(true);
+                    DefaultLoadControl defaultLoadControl = defaultLoadControlBuilder.createDefaultLoadControl();
+                    DefaultRenderersFactory renderersFactory =
+                            new DefaultRenderersFactory(getContext())
+                                    .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF);
+                    player = new SimpleExoPlayer.Builder(getContext(), renderersFactory)
+                                .setTrackSelector​(trackSelector)
+                                .setBandwidthMeter(bandwidthMeter)
+                                .setLoadControl(defaultLoadControl)
+                                .build();
+                    player.addListener(self);
+                    player.addMetadataOutput(self);
+                    exoPlayerView.setPlayer(player);
+                    audioBecomingNoisyReceiver.setListener(self);
+                    bandwidthMeter.addEventListener(new Handler(), self);
+                    setPlayWhenReady(!isPaused);
+                    playerNeedsSource = true;
 
-        if (initializing) {
-            return;
-        }
-
-        initializing = true;
-
-        if (player == null) {
-            ExoTrackSelection.Factory videoTrackSelectionFactory = new AdaptiveTrackSelection.Factory();
-            trackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
-            trackSelector.setParameters(trackSelector.buildUponParameters()
-                .setMaxVideoBitrate(maxBitRate == 0 ? Integer.MAX_VALUE : maxBitRate));
-            DefaultAllocator allocator = new DefaultAllocator(true, C.DEFAULT_BUFFER_SEGMENT_SIZE);
-            DefaultLoadControl.Builder defaultLoadControlBuilder = new DefaultLoadControl.Builder();
-            defaultLoadControlBuilder.setAllocator(allocator);
-            defaultLoadControlBuilder.setBufferDurationsMs(minBufferMs, maxBufferMs, bufferForPlaybackMs, bufferForPlaybackAfterRebufferMs);
-            defaultLoadControlBuilder.setTargetBufferBytes(-1);
-            defaultLoadControlBuilder.setPrioritizeTimeOverSizeThresholds(true);
-            DefaultLoadControl defaultLoadControl = defaultLoadControlBuilder.createDefaultLoadControl();
-            DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(getContext())
-                .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF);
-            player = new SimpleExoPlayer.Builder(getContext(), renderersFactory)
-                .setTrackSelector​(trackSelector)
-                .setBandwidthMeter(bandwidthMeter)
-                .setLoadControl(defaultLoadControl)
-                .build();
-            player.addListener(this);
-            player.addMetadataOutput(this);
-            exoPlayerView.setPlayer(player);
-            audioBecomingNoisyReceiver.setListener(this);
-            bandwidthMeter.addEventListener(new Handler(), this);
-            setPlayWhenReady(!isPaused);
-            playerNeedsSource = true;
-            PlaybackParameters params = new PlaybackParameters(rate, 1f);
-            player.setPlaybackParameters(params);
-        }
-
-        if (playerNeedsSource && srcUri != null) {
-            exoPlayerView.invalidateAspectRatio();
-
-            // DRM
-            DrmSessionManager drmSessionManager = null;
-            if (drmUUID != null) {
-                try {
-                    drmSessionManager = buildDrmSessionManager(drmUUID, drmLicenseUrl, drmLicenseHeader);
-                } catch (UnsupportedDrmException e) {
-                    int errorStringId = Util.SDK_INT < 18 ?
-                        R.string.error_drm_not_supported :
-                        (e.reason == UnsupportedDrmException.REASON_UNSUPPORTED_SCHEME ? R.string.error_drm_unsupported_scheme : R.string.error_drm_unknown);
-                    eventEmitter.error(getResources().getString(errorStringId), e);
-                    return;
+                    PlaybackParameters params = new PlaybackParameters(rate, 1f);
+                    player.setPlaybackParameters(params);
                 }
+                if (playerNeedsSource && srcUri != null) {
+                    exoPlayerView.invalidateAspectRatio();
+
+                    // DRM
+                    DrmSessionManager drmSessionManager = null;
+                    if (self.drmUUID != null) {
+                        try {
+                            drmSessionManager = buildDrmSessionManager(self.drmUUID, self.drmLicenseUrl,
+                                    self.drmLicenseHeader);
+                        } catch (UnsupportedDrmException e) {
+                            int errorStringId = Util.SDK_INT < 18 ? R.string.error_drm_not_supported
+                                    : (e.reason == UnsupportedDrmException.REASON_UNSUPPORTED_SCHEME
+                                    ? R.string.error_drm_unsupported_scheme : R.string.error_drm_unknown);
+                            eventEmitter.error(getResources().getString(errorStringId), e);
+                            return;
+                        }
+                    }
+                    // End DRM
+
+                    ArrayList<MediaSource> mediaSourceList = buildTextSources();
+                    MediaSource videoSource = buildMediaSource(srcUri, extension, drmSessionManager);
+                    MediaSource mediaSource;
+                    if (mediaSourceList.size() == 0) {
+                        mediaSource = videoSource;
+                    } else {
+                        mediaSourceList.add(0, videoSource);
+                        MediaSource[] textSourceArray = mediaSourceList.toArray(
+                                new MediaSource[mediaSourceList.size()]
+                        );
+                        mediaSource = new MergingMediaSource(textSourceArray);
+                    }
+
+                    boolean haveResumePosition = resumeWindow != C.INDEX_UNSET;
+                    if (haveResumePosition) {
+                        player.seekTo(resumeWindow, resumePosition);
+                    }
+                    player.prepare(mediaSource, !haveResumePosition, false);
+                    playerNeedsSource = false;
+
+                    reLayout(exoPlayerView);
+                    eventEmitter.loadStart();
+                    loadVideoStarted = true;
+                }
+
+                // Initializing the playerControlView
+                initializePlayerControl();
+                setControls(controls);
+                applyModifiers();
             }
-            // End DRM
-
-            ArrayList<MediaSource> mediaSourceList = buildTextSources();
-            MediaSource videoSource = buildMediaSource(srcUri, extension, drmSessionManager);
-            MediaSource mediaSource;
-
-            if (mediaSourceList.size() == 0) {
-                mediaSource = videoSource;
-            } else {
-                mediaSourceList.add(0, videoSource);
-                MediaSource[] textSourceArray = mediaSourceList.toArray(new MediaSource[mediaSourceList.size()]);
-                mediaSource = new MergingMediaSource(textSourceArray);
-            }
-
-            player.prepare(mediaSource);
-            playerNeedsSource = false;
-
-            reLayout(exoPlayerView);
-            eventEmitter.loadStart();
-            loadVideoStarted = true;
-        }
-
-        initializePlayerControl();
-        setControls(controls);
-        applyModifiers();
-
-        initializing = false;
+        }, 1);
     }
 
     private DrmSessionManager buildDrmSessionManager(UUID uuid, String licenseUrl, String[] keyRequestPropertiesArray) throws UnsupportedDrmException {
