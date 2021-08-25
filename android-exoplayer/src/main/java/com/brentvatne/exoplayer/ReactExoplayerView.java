@@ -397,7 +397,15 @@ class ReactExoplayerView extends FrameLayout implements
         ReactExoplayerView self = this;
 
         if (initializing) {
-            Log.d(TAG, "initializePlayer, skipping initialization, instance=" + hashCode());
+            Log.d(TAG, "initializePlayer, skipping initialization since it's already in progress, instance=" + hashCode());
+            return;
+        }
+
+        boolean initializationRequired =
+          player == null || (playerNeedsSource && srcUri != null);
+
+        if (!initializationRequired) {
+            Log.d(TAG, "initializePlayer, skipping initialization since it's not required, instance=" + hashCode());
             return;
         }
 
