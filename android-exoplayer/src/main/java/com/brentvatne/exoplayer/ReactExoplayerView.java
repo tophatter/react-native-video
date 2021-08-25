@@ -113,6 +113,7 @@ class ReactExoplayerView extends FrameLayout implements
     private SimpleExoPlayer player;
     private DefaultTrackSelector trackSelector;
     private boolean playerNeedsSource;
+    private boolean initializing;
 
     private int resumeWindow;
     private long resumePosition;
@@ -393,8 +394,15 @@ class ReactExoplayerView extends FrameLayout implements
     }
 
     private void initializePlayer() {
-        Log.d(TAG, "initializePlayer, enqueuing async initialization, instance=" + hashCode());
         ReactExoplayerView self = this;
+
+        if (initializing) {
+            Log.d(TAG, "initializePlayer, skipping initialization, instance=" + hashCode());
+            return;
+        }
+
+        Log.d(TAG, "initializePlayer, enqueuing async initialization, instance=" + hashCode());
+        initializing = true;
 
         // This ensures all props have been settled, to avoid async racing conditions.
         new Handler().postDelayed(new Runnable() {
@@ -485,6 +493,8 @@ class ReactExoplayerView extends FrameLayout implements
                 initializePlayerControl();
                 setControls(controls);
                 applyModifiers();
+
+                initializing = false;
             }
         }, 1);
     }
