@@ -397,25 +397,28 @@ class ReactExoplayerView extends FrameLayout implements
             @Override
             public void run() {
                 if (player == null) {
-                    // ExoTrackSelection.Factory videoTrackSelectionFactory = new AdaptiveTrackSelection.Factory();
-                    // trackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
-                    // trackSelector.setParameters(trackSelector.buildUponParameters().setMaxVideoBitrate(maxBitRate == 0 ? Integer.MAX_VALUE : maxBitRate));
-                    DefaultAllocator allocator = new DefaultAllocator(true, C.DEFAULT_BUFFER_SEGMENT_SIZE);
+                    ExoTrackSelection.Factory videoTrackSelectionFactory = new AdaptiveTrackSelection.Factory();
+                    trackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
+                    trackSelector.setParameters(trackSelector.buildUponParameters().setMaxVideoBitrate(maxBitRate == 0 ? Integer.MAX_VALUE : maxBitRate));
+
+                    /*DefaultAllocator allocator = new DefaultAllocator(true, C.DEFAULT_BUFFER_SEGMENT_SIZE);
                     DefaultLoadControl.Builder defaultLoadControlBuilder = new DefaultLoadControl.Builder();
                     defaultLoadControlBuilder.setAllocator(allocator);
                     defaultLoadControlBuilder.setBufferDurationsMs(minBufferMs, maxBufferMs, bufferForPlaybackMs, bufferForPlaybackAfterRebufferMs);
                     defaultLoadControlBuilder.setTargetBufferBytes(-1);
                     defaultLoadControlBuilder.setPrioritizeTimeOverSizeThresholds(true);
-                    DefaultLoadControl defaultLoadControl = defaultLoadControlBuilder.createDefaultLoadControl();
-                    DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(getContext())
-                                .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF);
-                    player = new SimpleExoPlayer.Builder(getContext()/*, renderersFactory */)
-                                // .setTrackSelector​(trackSelector)
-                                // .setBandwidthMeter(bandwidthMeter)
+                    DefaultLoadControl defaultLoadControl = defaultLoadControlBuilder.createDefaultLoadControl();*/
+
+                    DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(getContext()).setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF);
+
+                    player = new SimpleExoPlayer.Builder(getContext(), renderersFactory)
+                                .setTrackSelector​(trackSelector)
+                                .setBandwidthMeter(bandwidthMeter)
                                 // .setLoadControl(defaultLoadControl)
                                 .build();
+
                     player.addListener(self);
-                    player.addAnalyticsListener(new EventLogger(null));
+                    // player.addAnalyticsListener(new EventLogger(null));
                     player.addMetadataOutput(self);
                     exoPlayerView.setPlayer(player);
                     audioBecomingNoisyReceiver.setListener(self);
@@ -429,8 +432,10 @@ class ReactExoplayerView extends FrameLayout implements
                 if (playerNeedsSource && srcUri != null) {
                     exoPlayerView.invalidateAspectRatio();
 
+                    Log.d(TAG, "initializePlayer: playing srcUri=" + srcUri);
                     MediaItem mediaItem = MediaItem.fromUri(srcUri);
                     player.setMediaItem(mediaItem);
+                    player.prepare();
                     playerNeedsSource = false;
 
                     reLayout(exoPlayerView);
