@@ -205,7 +205,7 @@ class ReactExoplayerView extends FrameLayout implements
         themedReactContext.addLifecycleEventListener(this);
         audioBecomingNoisyReceiver = new AudioBecomingNoisyReceiver(themedReactContext);
 
-        Log.d(TAG, 'createViewInstance -> new ReactExoplayerView(), instance=' + hashCode());
+        Log.d(TAG, "createViewInstance -> new ReactExoplayerView(), instance=" + hashCode());
     }
 
 
@@ -273,7 +273,7 @@ class ReactExoplayerView extends FrameLayout implements
     }
 
     public void cleanUpResources() {
-        Log.d(TAG, 'onDropViewInstance -> cleanUpResources, instance=' + hashCode());
+        Log.d(TAG, "onDropViewInstance -> cleanUpResources, instance=" + hashCode());
         stopPlayback();
     }
 
@@ -583,7 +583,7 @@ class ReactExoplayerView extends FrameLayout implements
         if (disableFocus || srcUri == null || this.hasAudioFocus) {
             return true;
         }
-        Log.d(TAG, 'abandonAudioFocus, instance=' + hashCode());
+        Log.d(TAG, "abandonAudioFocus, instance=" + hashCode());
         int result = audioManager.requestAudioFocus(this,
                 AudioManager.STREAM_MUSIC,
                 AudioManager.AUDIOFOCUS_GAIN);
@@ -594,7 +594,7 @@ class ReactExoplayerView extends FrameLayout implements
         if (disableFocus || srcUri == null || !this.hasAudioFocus) {
             return true;
         }
-        Log.d(TAG, 'abandonAudioFocus, instance=' + hashCode());
+        Log.d(TAG, "abandonAudioFocus, instance=" + hashCode());
         int result = audioManager.abandonAudioFocus(this);
         return result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
     }
@@ -740,7 +740,7 @@ class ReactExoplayerView extends FrameLayout implements
             }
         }
 
-        Log.d(TAG, text + ', instance=' + hashCode());
+        Log.d(TAG, text + ", instance=" + hashCode());
     }
 
     // AudioBecomingNoisyListener implementation
@@ -798,7 +798,7 @@ class ReactExoplayerView extends FrameLayout implements
                 break;
         }
 
-        Log.d(TAG, text + ', instance=' + hashCode());
+        Log.d(TAG, text + ", instance=" + hashCode());
     }
 
     private void startProgressHandler() {
