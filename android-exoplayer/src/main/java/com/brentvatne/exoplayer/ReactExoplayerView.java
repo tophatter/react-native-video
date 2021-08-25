@@ -32,7 +32,6 @@ import com.google.android.exoplayer2.DefaultRenderersFactory;
 import com.google.android.exoplayer2.PlaybackException;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.Format;
-import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
@@ -399,26 +398,26 @@ class ReactExoplayerView extends FrameLayout implements
                 if (player == null) {
                     ExoTrackSelection.Factory videoTrackSelectionFactory = new AdaptiveTrackSelection.Factory();
                     trackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
-                    trackSelector.setParameters(trackSelector.buildUponParameters().setMaxVideoBitrate(maxBitRate == 0 ? Integer.MAX_VALUE : maxBitRate));
+                    trackSelector.setParameters(trackSelector.buildUponParameters()
+                            .setMaxVideoBitrate(maxBitRate == 0 ? Integer.MAX_VALUE : maxBitRate));
 
-                    /*DefaultAllocator allocator = new DefaultAllocator(true, C.DEFAULT_BUFFER_SEGMENT_SIZE);
+                    DefaultAllocator allocator = new DefaultAllocator(true, C.DEFAULT_BUFFER_SEGMENT_SIZE);
                     DefaultLoadControl.Builder defaultLoadControlBuilder = new DefaultLoadControl.Builder();
                     defaultLoadControlBuilder.setAllocator(allocator);
                     defaultLoadControlBuilder.setBufferDurationsMs(minBufferMs, maxBufferMs, bufferForPlaybackMs, bufferForPlaybackAfterRebufferMs);
                     defaultLoadControlBuilder.setTargetBufferBytes(-1);
                     defaultLoadControlBuilder.setPrioritizeTimeOverSizeThresholds(true);
-                    DefaultLoadControl defaultLoadControl = defaultLoadControlBuilder.createDefaultLoadControl();*/
-
-                    DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(getContext()).setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF);
-
+                    DefaultLoadControl defaultLoadControl = defaultLoadControlBuilder.createDefaultLoadControl();
+                    DefaultRenderersFactory renderersFactory =
+                            new DefaultRenderersFactory(getContext())
+                                    .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF);
                     player = new SimpleExoPlayer.Builder(getContext(), renderersFactory)
                                 .setTrackSelector​(trackSelector)
                                 .setBandwidthMeter(bandwidthMeter)
-                                // .setLoadControl(defaultLoadControl)
+                                .setLoadControl(defaultLoadControl)
                                 .build();
-
                     player.addListener(self);
-                    // player.addAnalyticsListener(new EventLogger(null));
+                    player.addAnalyticsListener(new EventLogger(null));
                     player.addMetadataOutput(self);
                     exoPlayerView.setPlayer(player);
                     audioBecomingNoisyReceiver.setListener(self);
@@ -432,10 +431,40 @@ class ReactExoplayerView extends FrameLayout implements
                 if (playerNeedsSource && srcUri != null) {
                     exoPlayerView.invalidateAspectRatio();
 
-                    Log.d(TAG, "initializePlayer: playing srcUri=" + srcUri);
-                    MediaItem mediaItem = MediaItem.fromUri(srcUri);
-                    player.setMediaItem(mediaItem);
-                    player.prepare();
+                    // DRM
+                    DrmSessionManager drmSessionManager = null;
+                    if (self.drmUUID != null) {
+                        try {
+                            drmSessionManager = buildDrmSessionManager(self.drmUUID, self.drmLicenseUrl,
+                                    self.drmLicenseHeader);
+                        } catch (UnsupportedDrmException e) {
+                            int errorStringId = Util.SDK_INT < 18 ? R.string.error_drm_not_supported
+                                    : (e.reason == UnsupportedDrmException.REASON_UNSUPPORTED_SCHEME
+                                    ? R.string.error_drm_unsupported_scheme : R.string.error_drm_unknown);
+                            eventEmitter.error(getResources().getString(errorStringId), e);
+                            return;
+                        }
+                    }
+                    // End DRM
+
+                    ArrayList<MediaSource> mediaSourceList = buildTextSources();
+                    MediaSource videoSource = buildMediaSource(srcUri, extension, drmSessionManager);
+                    MediaSource mediaSource;
+                    if (mediaSourceList.size() == 0) {
+                        mediaSource = videoSource;
+                    } else {
+                        mediaSourceList.add(0, videoSource);
+                        MediaSource[] textSourceArray = mediaSourceList.toArray(
+                                new MediaSource[mediaSourceList.size()]
+                        );
+                        mediaSource = new MergingMediaSource(textSourceArray);
+                    }
+
+                    boolean haveResumePosition = resumeWindow != C.INDEX_UNSET;
+                    if (haveResumePosition) {
+                        player.seekTo(resumeWindow, resumePosition);
+                    }
+                    player.prepare(mediaSource, !haveResumePosition, false);
                     playerNeedsSource = false;
 
                     reLayout(exoPlayerView);
@@ -1017,7 +1046,9 @@ class ReactExoplayerView extends FrameLayout implements
             this.srcUri = uri;
             this.extension = extension;
             this.requestHeaders = headers;
-            this.mediaDataSourceFactory = DataSourceUtil.getDefaultDataSourceFactory(this.themedReactContext, bandwidthMeter, this.requestHeaders);
+            this.mediaDataSourceFactory =
+                    DataSourceUtil.getDefaultDataSourceFactory(this.themedReactContext, bandwidthMeter,
+                            this.requestHeaders);
 
             if (!isSourceEqual) {
                 reloadSource();
