@@ -473,17 +473,13 @@ class ReactExoplayerView extends FrameLayout implements
                 mediaSource = new MergingMediaSource(textSourceArray);
             }
 
-            boolean haveResumePosition = resumeWindow != C.INDEX_UNSET;
-            if (haveResumePosition) {
-                player.seekTo(resumeWindow, resumePosition);
-            }
-            player.prepare(mediaSource, !haveResumePosition, false);
+            Log.d(TAG, "initializePlayer, load source, uri=" + srcUri + ", instance=" + hashCode());
+            player.prepare(mediaSource);
             playerNeedsSource = false;
 
             reLayout(exoPlayerView);
             eventEmitter.loadStart();
             loadVideoStarted = true;
-            Log.d(TAG, "initializePlayer, load source, uri=" + srcUri + ", instance=" + hashCode());
         } else {
             Log.d(TAG, "initializePlayer, *NOT* loading source, instance=" + hashCode());
         }
