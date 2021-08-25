@@ -148,7 +148,7 @@ class ReactExoplayerView extends FrameLayout implements
     private String textTrackType;
     private Dynamic textTrackValue;
     private ReadableArray textTracks;
-    private boolean disableFocus;
+    private boolean disableFocus = true;
     private boolean preventsDisplaySleepDuringVideoPlayback = true;
     private float mProgressUpdateInterval = 250.0f;
     private boolean playInBackground = false;
@@ -596,7 +596,7 @@ class ReactExoplayerView extends FrameLayout implements
         if (disableFocus || srcUri == null || this.hasAudioFocus) {
             return true;
         }
-        Log.d(TAG, "abandonAudioFocus, instance=" + hashCode());
+        Log.d(TAG, "requestAudioFocus -> audioManager.requestAudioFocus, disableFocus=" + disableFocus + ", instance=" + hashCode());
         int result = audioManager.requestAudioFocus(this,
                 AudioManager.STREAM_MUSIC,
                 AudioManager.AUDIOFOCUS_GAIN);
@@ -607,7 +607,7 @@ class ReactExoplayerView extends FrameLayout implements
         if (disableFocus || srcUri == null || !this.hasAudioFocus) {
             return true;
         }
-        Log.d(TAG, "abandonAudioFocus, instance=" + hashCode());
+        Log.d(TAG, "abandonAudioFocus -> audioManager.abandonAudioFocus, disableFocus=" + disableFocus + ", instance=" + hashCode());
         int result = audioManager.abandonAudioFocus(this);
         return result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
     }
@@ -674,6 +674,8 @@ class ReactExoplayerView extends FrameLayout implements
             setFullscreen(false);
         }
 
+        Log.d(TAG, "onStopPlayback -> abandonAudioFocus, instance=" + hashCode());
+
         if (abandonAudioFocus()) {
             this.hasAudioFocus = false;
         }
@@ -726,6 +728,7 @@ class ReactExoplayerView extends FrameLayout implements
                 this.hasAudioFocus = false;
                 eventEmitter.audioFocusChanged(false);
                 pausePlayback();
+                Log.d(TAG, "onAudioFocusChange(AUDIOFOCUS_LOSS) -> abandonAudioFocus, instance=" + hashCode());
                 abandonAudioFocus();
                 break;
             case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
