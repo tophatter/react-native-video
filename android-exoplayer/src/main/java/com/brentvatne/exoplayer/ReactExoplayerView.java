@@ -431,9 +431,9 @@ class ReactExoplayerView extends FrameLayout implements
 
                     PlaybackParameters params = new PlaybackParameters(rate, 1f);
                     player.setPlaybackParameters(params);
-                    Log.d(TAG, "initializePlayer, creating new SimpleExoPlayer, instance=" + self.hashCode());
+                    Log.d(TAG, "initializePlayer, creating new SimpleExoPlayer, setting playerNeedsSource to true, instance=" + self.hashCode() + ", runnable=" + hashCode());
                 } else {
-                    Log.d(TAG, "initializePlayer, *NOT* creating new SimpleExoPlayer, instance=" + self.hashCode());
+                    Log.d(TAG, "initializePlayer, *NOT* creating new SimpleExoPlayer, instance=" + self.hashCode() + ", runnable=" + hashCode());
                 }
 
                 if (playerNeedsSource && srcUri != null) {
@@ -443,12 +443,11 @@ class ReactExoplayerView extends FrameLayout implements
                     DrmSessionManager drmSessionManager = null;
                     if (self.drmUUID != null) {
                         try {
-                            drmSessionManager = buildDrmSessionManager(self.drmUUID, self.drmLicenseUrl,
-                                    self.drmLicenseHeader);
+                            drmSessionManager = buildDrmSessionManager(self.drmUUID, self.drmLicenseUrl, self.drmLicenseHeader);
                         } catch (UnsupportedDrmException e) {
-                            int errorStringId = Util.SDK_INT < 18 ? R.string.error_drm_not_supported
-                                    : (e.reason == UnsupportedDrmException.REASON_UNSUPPORTED_SCHEME
-                                    ? R.string.error_drm_unsupported_scheme : R.string.error_drm_unknown);
+                            int errorStringId = Util.SDK_INT < 18 ?
+                              R.string.error_drm_not_supported :
+                              (e.reason == UnsupportedDrmException.REASON_UNSUPPORTED_SCHEME ? R.string.error_drm_unsupported_scheme : R.string.error_drm_unknown);
                             eventEmitter.error(getResources().getString(errorStringId), e);
                             return;
                         }
@@ -458,13 +457,12 @@ class ReactExoplayerView extends FrameLayout implements
                     ArrayList<MediaSource> mediaSourceList = buildTextSources();
                     MediaSource videoSource = buildMediaSource(srcUri, extension, drmSessionManager);
                     MediaSource mediaSource;
+
                     if (mediaSourceList.size() == 0) {
                         mediaSource = videoSource;
                     } else {
                         mediaSourceList.add(0, videoSource);
-                        MediaSource[] textSourceArray = mediaSourceList.toArray(
-                                new MediaSource[mediaSourceList.size()]
-                        );
+                        MediaSource[] textSourceArray = mediaSourceList.toArray(new MediaSource[mediaSourceList.size()]);
                         mediaSource = new MergingMediaSource(textSourceArray);
                     }
 
@@ -478,9 +476,9 @@ class ReactExoplayerView extends FrameLayout implements
                     reLayout(exoPlayerView);
                     eventEmitter.loadStart();
                     loadVideoStarted = true;
-                    Log.d(TAG, "initializePlayer, loading sourch, instance=" + self.hashCode());
+                    Log.d(TAG, "initializePlayer, load source, uri=" + srcUri + ", instance=" + self.hashCode() + ", runnable=" + hashCode());
                 } else {
-                    Log.d(TAG, "initializePlayer, *NOT* loading source, instance=" + self.hashCode());
+                    Log.d(TAG, "initializePlayer, *NOT* loading source, instance=" + self.hashCode() + ", runnable=" + hashCode());
                 }
 
                 // Initializing the playerControlView
@@ -1009,7 +1007,7 @@ class ReactExoplayerView extends FrameLayout implements
 
         eventEmitter.error(errorString, ex);
         playerNeedsSource = true;
-        Log.d(TAG, "onPlayerError -> initializePlayer, error= " + errorString + ", instance=" + hashCode());
+        Log.d(TAG, "onPlayerError -> initializePlayer, setting playerNeedsSource to true, error= " + errorString + ", instance=" + hashCode());
 
         if (isBehindLiveWindow(e)) {
             clearResumePosition();
@@ -1112,7 +1110,7 @@ class ReactExoplayerView extends FrameLayout implements
 
     private void reloadSource() {
         playerNeedsSource = true;
-        Log.d(TAG, "onPlayerError -> initializePlayer, instance=" + hashCode());
+        Log.d(TAG, "reloadSource -> initializePlayer, setting playerNeedsSource to true, instance=" + hashCode());
         initializePlayer();
     }
 
@@ -1326,7 +1324,7 @@ class ReactExoplayerView extends FrameLayout implements
     public void setMinLoadRetryCountModifier(int newMinLoadRetryCount) {
         minLoadRetryCount = newMinLoadRetryCount;
         releasePlayer();
-        Log.d(TAG, "onPlayerError -> initializePlayer, instance=" + hashCode());
+        Log.d(TAG, "setMinLoadRetryCountModifier -> initializePlayer, instance=" + hashCode());
         initializePlayer();
     }
 
