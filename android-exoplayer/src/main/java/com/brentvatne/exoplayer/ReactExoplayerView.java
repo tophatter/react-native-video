@@ -393,7 +393,9 @@ class ReactExoplayerView extends FrameLayout implements
     }
 
     private void initializePlayer() {
+        Log.d(TAG, "initializePlayer, enqueuing async initialization, instance=" + hashCode());
         ReactExoplayerView self = this;
+
         // This ensures all props have been settled, to avoid async racing conditions.
         new Handler().postDelayed(new Runnable() {
             @Override
@@ -429,9 +431,9 @@ class ReactExoplayerView extends FrameLayout implements
 
                     PlaybackParameters params = new PlaybackParameters(rate, 1f);
                     player.setPlaybackParameters(params);
-                    Log.d(TAG, "initializePlayer, creating new SimpleExoPlayer, instance=" + hashCode());
+                    Log.d(TAG, "initializePlayer, creating new SimpleExoPlayer, instance=" + self.hashCode());
                 } else {
-                    Log.d(TAG, "initializePlayer, *NOT* creating new SimpleExoPlayer, instance=" + hashCode());
+                    Log.d(TAG, "initializePlayer, *NOT* creating new SimpleExoPlayer, instance=" + self.hashCode());
                 }
 
                 if (playerNeedsSource && srcUri != null) {
@@ -476,9 +478,9 @@ class ReactExoplayerView extends FrameLayout implements
                     reLayout(exoPlayerView);
                     eventEmitter.loadStart();
                     loadVideoStarted = true;
-                    Log.d(TAG, "initializePlayer, loading sourch, instance=" + hashCode());
+                    Log.d(TAG, "initializePlayer, loading sourch, instance=" + self.hashCode());
                 } else {
-                    Log.d(TAG, "initializePlayer, *NOT* loading source, instance=" + hashCode());
+                    Log.d(TAG, "initializePlayer, *NOT* loading source, instance=" + self.hashCode());
                 }
 
                 // Initializing the playerControlView
@@ -1004,8 +1006,11 @@ class ReactExoplayerView extends FrameLayout implements
         else if (e.type == ExoPlaybackException.TYPE_SOURCE) {
             errorString = getResources().getString(R.string.unrecognized_media_format);
         }
+
         eventEmitter.error(errorString, ex);
         playerNeedsSource = true;
+        Log.d(TAG, "onPlayerError -> initializePlayer, error= " + errorString + ", instance=" + hashCode());
+
         if (isBehindLiveWindow(e)) {
             clearResumePosition();
             Log.d(TAG, "onPlayerError -> initializePlayer, instance=" + hashCode());
