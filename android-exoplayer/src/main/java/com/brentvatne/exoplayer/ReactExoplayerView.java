@@ -205,8 +205,6 @@ class ReactExoplayerView extends FrameLayout implements
         audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         themedReactContext.addLifecycleEventListener(this);
         audioBecomingNoisyReceiver = new AudioBecomingNoisyReceiver(themedReactContext);
-
-        Log.d(TAG, "createViewInstance -> new ReactExoplayerView(), instance=" + hashCode());
     }
 
 
@@ -237,7 +235,6 @@ class ReactExoplayerView extends FrameLayout implements
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        Log.d(TAG, "onAttachedToWindow -> initializePlayer, instance=" + hashCode());
         initializePlayer();
     }
 
@@ -275,7 +272,6 @@ class ReactExoplayerView extends FrameLayout implements
     }
 
     public void cleanUpResources() {
-        Log.d(TAG, "onDropViewInstance -> cleanUpResources, instance=" + hashCode());
         stopPlayback();
     }
 
@@ -398,16 +394,13 @@ class ReactExoplayerView extends FrameLayout implements
           player == null || (playerNeedsSource && srcUri != null);
 
         if (!initializationRequired) {
-            Log.d(TAG, "initializePlayer, skipping initialization since it's not required, instance=" + hashCode());
             return;
         }
 
         if (initializing) {
-            Log.d(TAG, "initializePlayer, skipping initialization since it's already in progress, instance=" + hashCode());
             return;
         }
 
-        Log.d(TAG, "initializePlayer, enqueuing async initialization, instance=" + hashCode());
         initializing = true;
 
         if (player == null) {
@@ -438,9 +431,6 @@ class ReactExoplayerView extends FrameLayout implements
             playerNeedsSource = true;
             PlaybackParameters params = new PlaybackParameters(rate, 1f);
             player.setPlaybackParameters(params);
-            Log.d(TAG, "initializePlayer, creating new SimpleExoPlayer, setting playerNeedsSource to true, instance=" + hashCode());
-        } else {
-            Log.d(TAG, "initializePlayer, *NOT* creating new SimpleExoPlayer, instance=" + hashCode());
         }
 
         if (playerNeedsSource && srcUri != null) {
@@ -473,15 +463,12 @@ class ReactExoplayerView extends FrameLayout implements
                 mediaSource = new MergingMediaSource(textSourceArray);
             }
 
-            Log.d(TAG, "initializePlayer, load source, uri=" + srcUri + ", instance=" + hashCode());
             player.prepare(mediaSource);
             playerNeedsSource = false;
 
             reLayout(exoPlayerView);
             eventEmitter.loadStart();
             loadVideoStarted = true;
-        } else {
-            Log.d(TAG, "initializePlayer, *NOT* loading source, instance=" + hashCode());
         }
 
         initializePlayerControl();
@@ -598,7 +585,6 @@ class ReactExoplayerView extends FrameLayout implements
         if (disableFocus || srcUri == null || this.hasAudioFocus) {
             return true;
         }
-        Log.d(TAG, "requestAudioFocus -> audioManager.requestAudioFocus, disableFocus=" + disableFocus + ", instance=" + hashCode());
         int result = audioManager.requestAudioFocus(this,
                 AudioManager.STREAM_MUSIC,
                 AudioManager.AUDIOFOCUS_GAIN);
@@ -609,7 +595,6 @@ class ReactExoplayerView extends FrameLayout implements
         if (disableFocus || srcUri == null || !this.hasAudioFocus) {
             return true;
         }
-        Log.d(TAG, "abandonAudioFocus -> audioManager.abandonAudioFocus, disableFocus=" + disableFocus + ", instance=" + hashCode());
         int result = audioManager.abandonAudioFocus(this);
         return result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
     }
@@ -634,7 +619,6 @@ class ReactExoplayerView extends FrameLayout implements
             switch (player.getPlaybackState()) {
                 case Player.STATE_IDLE:
                 case Player.STATE_ENDED:
-                    Log.d(TAG, "startPlayback -> initializePlayer, player already instantiated, instance=" + hashCode());
                     initializePlayer();
                     break;
                 case Player.STATE_BUFFERING:
@@ -648,7 +632,6 @@ class ReactExoplayerView extends FrameLayout implements
             }
 
         } else {
-            Log.d(TAG, "startPlayback -> initializePlayer, player not already instantiated, instance=" + hashCode());
             initializePlayer();
         }
 
@@ -675,8 +658,6 @@ class ReactExoplayerView extends FrameLayout implements
         if (isFullscreen) {
             setFullscreen(false);
         }
-
-        Log.d(TAG, "onStopPlayback -> abandonAudioFocus, instance=" + hashCode());
 
         if (abandonAudioFocus()) {
             this.hasAudioFocus = false;
@@ -722,28 +703,21 @@ class ReactExoplayerView extends FrameLayout implements
 
     @Override
     public void onAudioFocusChange(int focusChange) {
-        String text = "onAudioFocusChange: focusChange=";
-
         switch (focusChange) {
             case AudioManager.AUDIOFOCUS_LOSS:
-                text += "loss";
                 this.hasAudioFocus = false;
                 eventEmitter.audioFocusChanged(false);
                 pausePlayback();
-                Log.d(TAG, "onAudioFocusChange(AUDIOFOCUS_LOSS) -> abandonAudioFocus, instance=" + hashCode());
                 abandonAudioFocus();
                 break;
             case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
-                text += "loss_transient";
                 eventEmitter.audioFocusChanged(false);
                 break;
             case AudioManager.AUDIOFOCUS_GAIN:
-                text += "gain";
                 this.hasAudioFocus = true;
                 eventEmitter.audioFocusChanged(true);
                 break;
             default:
-                text += "unknown";
                 break;
         }
 
@@ -760,8 +734,6 @@ class ReactExoplayerView extends FrameLayout implements
                 }
             }
         }
-
-        Log.d(TAG, text + ", instance=" + hashCode());
     }
 
     // AudioBecomingNoisyListener implementation
@@ -819,7 +791,7 @@ class ReactExoplayerView extends FrameLayout implements
                 break;
         }
 
-        Log.d(TAG, text + ", instance=" + hashCode());
+        Log.d(TAG, text);
     }
 
     private void startProgressHandler() {
@@ -836,8 +808,6 @@ class ReactExoplayerView extends FrameLayout implements
     }
 
     private void videoLoaded() {
-        Log.d(TAG, "videoLoaded, instance=" + hashCode());
-
         if (loadVideoStarted) {
             loadVideoStarted = false;
             setSelectedAudioTrack(audioTrackType, audioTrackValue);
@@ -1026,11 +996,9 @@ class ReactExoplayerView extends FrameLayout implements
 
         eventEmitter.error(errorString, ex);
         playerNeedsSource = true;
-        Log.d(TAG, "onPlayerError -> initializePlayer, setting playerNeedsSource to true, error= " + errorString + ", instance=" + hashCode());
 
         if (isBehindLiveWindow(e)) {
             clearResumePosition();
-            Log.d(TAG, "onPlayerError -> initializePlayer, instance=" + hashCode());
             initializePlayer();
         } else {
             updateResumePosition();
@@ -1073,8 +1041,6 @@ class ReactExoplayerView extends FrameLayout implements
     // ReactExoplayerViewManager public api
 
     public void setSrc(final Uri uri, final String extension, Map<String, String> headers) {
-        Log.d(TAG, "setSrc -> " + uri + ", instance=" + hashCode());
-
         if (uri != null) {
             boolean isSourceEqual = uri.equals(srcUri);
 
@@ -1084,7 +1050,6 @@ class ReactExoplayerView extends FrameLayout implements
             this.mediaDataSourceFactory = DataSourceUtil.getDefaultDataSourceFactory(this.themedReactContext, bandwidthMeter, this.requestHeaders);
 
             if (!isSourceEqual) {
-                Log.d(TAG, "setSrc -> reloadSource, source changed, instance=" + hashCode());
                 reloadSource();
             }
         }
@@ -1130,7 +1095,6 @@ class ReactExoplayerView extends FrameLayout implements
 
     private void reloadSource() {
         playerNeedsSource = true;
-        Log.d(TAG, "reloadSource -> initializePlayer, setting playerNeedsSource to true, instance=" + hashCode());
         initializePlayer();
     }
 
@@ -1291,8 +1255,6 @@ class ReactExoplayerView extends FrameLayout implements
     }
 
     public void setPausedModifier(boolean paused) {
-        Log.d(TAG, "setPausedModifier -> " + paused + ", instance=" + hashCode());
-
         isPaused = paused;
         if (player != null) {
             if (!paused) {
@@ -1304,8 +1266,6 @@ class ReactExoplayerView extends FrameLayout implements
     }
 
     public void setMutedModifier(boolean muted) {
-        Log.d(TAG, "setMutedModifier -> " + muted + ", instance=" + hashCode());
-
         this.muted = muted;
         audioVolume = muted ? 0.f : 1.f;
         if (player != null) {
@@ -1314,8 +1274,6 @@ class ReactExoplayerView extends FrameLayout implements
     }
 
     public void setVolumeModifier(float volume) {
-        Log.d(TAG, "setVolumeModifier -> " + volume + ", instance=" + hashCode());
-
         audioVolume = volume;
         if (player != null) {
             player.setVolume(audioVolume);
@@ -1349,7 +1307,6 @@ class ReactExoplayerView extends FrameLayout implements
     public void setMinLoadRetryCountModifier(int newMinLoadRetryCount) {
         minLoadRetryCount = newMinLoadRetryCount;
         releasePlayer();
-        Log.d(TAG, "setMinLoadRetryCountModifier -> initializePlayer, instance=" + hashCode());
         initializePlayer();
     }
 
@@ -1358,7 +1315,6 @@ class ReactExoplayerView extends FrameLayout implements
     }
 
     public void setDisableFocus(boolean disableFocus) {
-        Log.d(TAG, "setDisableFocus -> " + disableFocus + ", instance=" + hashCode());
         this.disableFocus = disableFocus;
     }
 
@@ -1410,7 +1366,6 @@ class ReactExoplayerView extends FrameLayout implements
         bufferForPlaybackMs = newBufferForPlaybackMs;
         bufferForPlaybackAfterRebufferMs = newBufferForPlaybackAfterRebufferMs;
         releasePlayer();
-        Log.d(TAG, "setBufferConfig -> initializePlayer, instance=" + hashCode());
         initializePlayer();
     }
 
