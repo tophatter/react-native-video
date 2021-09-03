@@ -724,6 +724,7 @@ class ReactExoplayerView extends FrameLayout implements
     }
 
     private void setPlayerVolume(float volume) {
+        // If we're muted keep the volume at 0.0 (which will have been set by mutePlayer()).
         if (player == null || muted) {
             return;
         }
