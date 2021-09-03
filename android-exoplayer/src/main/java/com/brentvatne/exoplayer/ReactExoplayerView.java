@@ -723,6 +723,21 @@ class ReactExoplayerView extends FrameLayout implements
         return DataSourceUtil.getDefaultHttpDataSourceFactory(this.themedReactContext, useBandwidthMeter ? bandwidthMeter : null, requestHeaders);
     }
 
+    private void setPlayerVolume(float volume) {
+        if (player == null || muted) {
+            return;
+        }
+
+        player.setVolume(volume);
+    }
+
+    private void mutePlayer() {
+        player.setVolume(0.0);
+    }
+
+    private void unmutePlayer() {
+        player.setVolume(audioVolume);
+    }
 
     // AudioManager.OnAudioFocusChangeListener implementation
 
@@ -748,15 +763,9 @@ class ReactExoplayerView extends FrameLayout implements
 
         if (player != null) {
             if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) {
-                // Lower the volume
-                if (!muted) {
-                    player.setVolume(audioVolume * 0.8f);
-                }
+                setPlayerVolume(audioVolume * 0.8f); // Lower the volume
             } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
-                // Raise it back to normal
-                if (!muted) {
-                    player.setVolume(audioVolume * 1);
-                }
+                setPlayerVolume(audioVolume * 1); // Raise it back to normal
             }
         }
     }
@@ -1127,15 +1136,19 @@ class ReactExoplayerView extends FrameLayout implements
     }
 
     private void applyModifiers() {
+        Log.d("ReactExoplayerView", "applyModifiers() - repeat=" + repeat + ", muted=" + muted + ", volume=" + audioVolume);
         setRepeatModifier(repeat);
         setMutedModifier(muted);
+        setVolumeModifier(audioVolume);
     }
 
     public void setRepeatModifier(boolean repeat) {
         if (player != null) {
             if (repeat) {
+                Log.d("ReactExoplayerView", "setRepeatModifier() - setting repeat to REPEAT_MODE_ONE");
                 player.setRepeatMode(Player.REPEAT_MODE_ONE);
             } else {
+                Log.d("ReactExoplayerView", "setRepeatModifier() - setting repeat to REPEAT_MODE_OFF");
                 player.setRepeatMode(Player.REPEAT_MODE_OFF);
             }
         }
@@ -1289,18 +1302,19 @@ class ReactExoplayerView extends FrameLayout implements
         }
     }
 
-    public void setMutedModifier(boolean muted) {
-        this.muted = muted;
-        audioVolume = muted ? 0.f : 1.f;
+    public void setMutedModifier(boolean newMuted) {
+        muted = newMuted;
         if (player != null) {
-            player.setVolume(audioVolume);
+            Log.d("ReactExoplayerView", "setMutedModifier() - setting muted to" + muted + ", audioVolume is " + audioVolume);
+            muted ? mutePlayer() : unmutePlayer();
         }
     }
 
-    public void setVolumeModifier(float volume) {
-        audioVolume = volume;
+    public void setVolumeModifier(float newAudioVolume) {
+        audioVolume = newAudioVolume;
         if (player != null) {
-            player.setVolume(audioVolume);
+            Log.d("ReactExoplayerView", "setVolumeModifier() - setting audioVolume to " + audioVolume + ", muted is " + muted);
+            setPlayerVolume(audioVolume);
         }
     }
 
