@@ -733,7 +733,7 @@ class ReactExoplayerView extends FrameLayout implements
     }
 
     private void mutePlayer() {
-        player.setVolume(0.0);
+        player.setVolume(0.0f);
     }
 
     private void unmutePlayer() {
@@ -1137,7 +1137,6 @@ class ReactExoplayerView extends FrameLayout implements
     }
 
     private void applyModifiers() {
-        Log.d("ReactExoplayerView", "applyModifiers() - repeat=" + repeat + ", muted=" + muted + ", volume=" + audioVolume);
         setRepeatModifier(repeat);
         setMutedModifier(muted);
         setVolumeModifier(audioVolume);
@@ -1146,10 +1145,8 @@ class ReactExoplayerView extends FrameLayout implements
     public void setRepeatModifier(boolean repeat) {
         if (player != null) {
             if (repeat) {
-                Log.d("ReactExoplayerView", "setRepeatModifier() - setting repeat to REPEAT_MODE_ONE");
                 player.setRepeatMode(Player.REPEAT_MODE_ONE);
             } else {
-                Log.d("ReactExoplayerView", "setRepeatModifier() - setting repeat to REPEAT_MODE_OFF");
                 player.setRepeatMode(Player.REPEAT_MODE_OFF);
             }
         }
@@ -1306,15 +1303,17 @@ class ReactExoplayerView extends FrameLayout implements
     public void setMutedModifier(boolean newMuted) {
         muted = newMuted;
         if (player != null) {
-            Log.d("ReactExoplayerView", "setMutedModifier() - setting muted to" + muted + ", audioVolume is " + audioVolume);
-            muted ? mutePlayer() : unmutePlayer();
+            if (muted) {
+                mutePlayer();
+            } else {
+                unmutePlayer();
+            }
         }
     }
 
     public void setVolumeModifier(float newAudioVolume) {
         audioVolume = newAudioVolume;
         if (player != null) {
-            Log.d("ReactExoplayerView", "setVolumeModifier() - setting audioVolume to " + audioVolume + ", muted is " + muted);
             setPlayerVolume(audioVolume);
         }
     }
