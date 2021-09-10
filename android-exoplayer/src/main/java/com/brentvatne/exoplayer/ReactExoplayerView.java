@@ -437,23 +437,23 @@ class ReactExoplayerView extends FrameLayout implements
                     trackSelector = new DefaultTrackSelector(getContext(), videoTrackSelectionFactory);
                     trackSelector.setParameters(trackSelector.buildUponParameters().setMaxVideoBitrate(maxBitRate == 0 ? Integer.MAX_VALUE : maxBitRate));
 
-                    /*DefaultAllocator allocator = new DefaultAllocator(true, C.DEFAULT_BUFFER_SEGMENT_SIZE);
+                    DefaultAllocator allocator = new DefaultAllocator(true, C.DEFAULT_BUFFER_SEGMENT_SIZE);
                     DefaultLoadControl.Builder defaultLoadControlBuilder = new DefaultLoadControl.Builder();
                     defaultLoadControlBuilder.setAllocator(allocator);
                     defaultLoadControlBuilder.setBufferDurationsMs(minBufferMs, maxBufferMs, bufferForPlaybackMs, bufferForPlaybackAfterRebufferMs);
                     defaultLoadControlBuilder.setTargetBufferBytes(-1);
                     defaultLoadControlBuilder.setPrioritizeTimeOverSizeThresholds(true);
-                    DefaultLoadControl defaultLoadControl = defaultLoadControlBuilder.createDefaultLoadControl();*/
+                    DefaultLoadControl defaultLoadControl = defaultLoadControlBuilder.createDefaultLoadControl();
 
                     player = new SimpleExoPlayer.Builder(getContext(), renderersFactory)
                                 .setBandwidthMeter(bandwidthMeter)
                                 .setMediaSourceFactory(mediaSourceFactory)
                                 .setTrackSelector(trackSelector)
-                                // .setLoadControl(defaultLoadControl)
+                                .setLoadControl(defaultLoadControl)
                                 .build();
 
                     player.addListener(self);
-                    // player.addAnalyticsListener(new EventLogger(null));
+//                    player.addAnalyticsListener(new EventLogger(null));
                     player.addMetadataOutput(self);
                     exoPlayerView.setPlayer(player);
                     audioBecomingNoisyReceiver.setListener(self);
@@ -596,8 +596,8 @@ class ReactExoplayerView extends FrameLayout implements
     private void releasePlayer() {
         if (player != null) {
             updateResumePosition();
-            player.release();
             player.removeMetadataOutput(this);
+            player.release();
             trackSelector = null;
             player = null;
         }
@@ -825,7 +825,7 @@ class ReactExoplayerView extends FrameLayout implements
                 text += "unknown";
                 break;
         }
-        Log.d(TAG, text);
+//        Log.d(TAG, text);
     }
 
     private void startProgressHandler() {
